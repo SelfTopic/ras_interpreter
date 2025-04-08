@@ -1,0 +1,9 @@
+
+local number :integer: << 10 #
+local hello :string: << "hello" #
+local isFlag :bool: << 0! #
+local isFlag2 :bool: << 1! #
+local list :array: << <1, 2, 3> #
+local Tuple :tuple: << !<1, 2, 3> # 
+local Dict :dict: << ~< hello < number > #
+local none :empty: << empty #
