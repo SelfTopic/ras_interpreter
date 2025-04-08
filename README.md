@@ -69,10 +69,10 @@
         con :var == 10: ::
             print: "var = 10" #
 
-        :: elson :var < 10: ::
+        :: elcon :var < 10: ::
             print: "var < 10" #
 
-        :: elson :var > 10: ::
+        :: elcon :var > 10: ::
             print: "var > 10" #
 
         ::
