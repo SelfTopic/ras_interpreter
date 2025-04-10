@@ -1,3 +1,0 @@
-
-class integer(int):
-    pass
