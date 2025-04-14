@@ -1,9 +1,13 @@
-from .function import Function 
-from .params import Param 
+from .function import Function, Getter, Setter
+from .params import Param, ParamDefaultValue, NoParamDefaultValue
 from .variable import Variable
 
 __all__ = [
     Function,
+    Getter,
+    Setter,
     Param,
-    Variable    
+    ParamDefaultValue,
+    NoParamDefaultValue,
+    Variable
 ]

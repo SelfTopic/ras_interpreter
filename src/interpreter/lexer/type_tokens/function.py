@@ -1,11 +1,27 @@
-from dataclasses import dataclass 
+from dataclasses import dataclass
 from .params import Param
 
-@dataclass 
+@dataclass
 class Function:
-    name: str 
+    name: str
     params: list[Param]
-    return_type: str
-    body: str 
+    return_types: list[str]
+    body: str
 
-    
+
+@dataclass
+class Getter:
+    root: None
+    name: str
+    params: list[Param]
+    return_types: list[str]
+    body: str
+
+
+@dataclass
+class Setter:
+    root: None
+    name: str
+    params: list[Param]
+    return_types: list[str]
+    body: str

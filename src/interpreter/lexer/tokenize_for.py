@@ -1,5 +1,6 @@
 from dataclasses import dataclass
 from typing import Any
+from ._tokenizer import _Tokenizer
 
 @dataclass
 class ForLoop:
@@ -8,11 +9,9 @@ class ForLoop:
     body: str
 
 
-class ForLoopTokenize:
+class ForLoopTokenize(_Tokenizer):
     def __init__(self, code: str):
-        self.code = code
-        self.pos = 0
-        self.char = self.code[self.pos] if code else ''
+        super().__init__(code)
 
     def tokenize(self) -> ForLoop:
         """Токенизирует цикл for."""
@@ -50,17 +49,6 @@ class ForLoopTokenize:
         self.advance()
 
         return ForLoop(variable_name=variable_name, iterable=iterable, body=body), self.pos
-
-    def advance(self) -> None:
-        self.pos += 1
-        if self.pos < len(self.code):
-            self.char = self.code[self.pos]
-        else:
-            self.char = ''
-
-    def skip_whitespace(self):
-        while self.char and self.char.isspace():
-            self.advance()
 
     def _tokenize_variable_name(self) -> str:
         name = ""

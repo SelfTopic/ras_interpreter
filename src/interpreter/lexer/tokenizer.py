@@ -1,31 +1,22 @@
 from typing import Union, Tuple, List
 
+from ._tokenizer import _Tokenizer
 from .tokenize_variable import Variable, VariableTokenize
 from .tokenize_function import FunctionTokenize, Function
-from .tokenize_class import ClassDefinition, ClassTokenize
+from .tokenize_class import Class, ClassTokenize
 from .tokenize_for import ForLoop, ForLoopTokenize
 from .tokenize_while import WhileLoop, WhileLoopTokenize
 from .tokenize_import import ImportStatement, ImportTokenize
 
 
-class Tokenizer:
+class Tokenizer(_Tokenizer):
     def __init__(self, code: str):
-        self.code = code
-        self.pos = 0
-        self.char = self.code[self.pos] if code else ''
+        super().__init__(code)
+        # self.code = code
+        # self.pos = 0
+        # self.char = self.code[self.pos] if code else ''
 
-    def advance(self) -> None:
-        self.pos += 1
-        if self.pos < len(self.code):
-            self.char = self.code[self.pos]
-        else:
-            self.char = ''
-
-    def skip_whitespace(self):
-        while self.char and self.char.isspace():
-            self.advance()
-
-    def tokenize(self) -> List[Union[Variable, Function, ClassDefinition, ForLoop, WhileLoop, ImportStatement]]:
+    def tokenize(self) -> List[Union[Variable, Function, Class, ForLoop, WhileLoop, ImportStatement]]:
         tokens = []
 
         while self.char:
@@ -62,18 +53,20 @@ class Tokenizer:
                 tokens.append(import_statement)
                 self.pos += offset
                 self.advance()
-            elif self.code[self.pos:].startswith("cl "):
+            elif self.code[self.pos:].startswith("cl"):
                 class_defintion, offset = ClassTokenize(self.code[self.pos:]).tokenize()
                 tokens.append(class_defintion)
-                self.pos += offset 
+                self.pos += offset
                 self.advance()
+                print(f"MYCODE: '{self.code[self.pos:]}'")
             elif self.code.startswith("#"):  
                 while self.char and self.char != '\n':
                     self.advance()
                 if self.char == '\n':
                     self.advance()
             else:
-                raise SyntaxError(f"Unexpected token {self.char} at position {self.pos}")
+                if self.char:
+                    raise SyntaxError(f"Unexpected token {self.char} at position {self.pos}")
 
         return tokens
 

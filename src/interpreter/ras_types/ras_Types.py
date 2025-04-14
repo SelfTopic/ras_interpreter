@@ -1,11 +1,13 @@
 # ras_types.py
 
+ALL_TYPES = ["string", "integer", "bool", "empty", "float", "list", "tuple", "dict"]
+
 class string:
     def __init__(self, value: str):
         self.value = value
 
     def __repr__(self): # для удобной отладки
-        return f"String({self.value})"
+        return f"String('{self.value}')"
 
 class integer:
     def __init__(self, value: int):
@@ -13,6 +15,13 @@ class integer:
 
     def __repr__(self):
         return f"Integer({self.value})"
+
+class bool_:
+    def __init__(self, value: bool):
+        self.value = value
+
+    def __repr__(self):
+        return f"Bool({self.value})"
 
 class empty:
     def __init__(self):

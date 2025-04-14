@@ -1,23 +1,24 @@
+# ЧЕКНИ СТРОКИ 
+# 108
 
 from dataclasses import dataclass
-from typing import Union, Any
+from typing import Union, Any, List
+from ._tokenizer import _Tokenizer
+from .tokenize_value import ValueTokenize
 
 
 @dataclass
 class Variable:
     name: str
     value: Union[str, int, float, bool, None]  # Пример типов, можно расширить
-    variable_type: str
+    variable_types: List[str]
     is_local: bool
     is_global: bool
 
 
-class VariableTokenize:
-
+class VariableTokenize(_Tokenizer):
     def __init__(self, code: str):
-        self.code = code
-        self.pos = 0
-        self.char = self.code[self.pos] if code else ''
+        super().__init__(code)
 
     def tokenize(self):
         """Токенизирует объявление переменной (local или global)."""
@@ -44,7 +45,7 @@ class VariableTokenize:
             raise SyntaxError("Expected ':' after variable name")
         self.advance()
 
-        variable_type = self._tokenize_type()
+        variable_types = self._tokenize_type()
         self.skip_whitespace()
 
         if self.char != ":":
@@ -53,19 +54,28 @@ class VariableTokenize:
         self.skip_whitespace()
 
         if self.code[self.pos:self.pos + 2] != "<<":
-            raise SyntaxError("Expected '<<' after ':'")
-        self.pos += 2
-        self.advance()
-        self.skip_whitespace()
 
-        value = self._tokenize_value(variable_type)
-        self.skip_whitespace()
+            # raise SyntaxError("Expected '<<' after ':'")
+            self.pos += 2
+            self.advance()
+            self.skip_whitespace()
+
+            value, offset = ValueTokenize(self.code[self.pos:], variable_types).tokenize()
+            self.pos += offset
+            self.char = self.code[self.pos]
+        else:
+            value = None
+            # print(self.pos, self.)
+            self.skip_whitespace()
+
+        # if not value:
+        #     raise ValueError()
 
         if self.char != "#":
             raise SyntaxError("Expected '#' at the end of variable declaration")
         #self.pos += 1 # consume the hash
         #self.advance()
-        return Variable(name=name, value=value, variable_type=variable_type, is_local=is_local, is_global=is_global), self.pos
+        return Variable(name=name, value=value, variable_types=variable_types, is_local=is_local, is_global=is_global), self.pos
 
     def advance(self) -> None:
          self.pos += 1
@@ -88,76 +98,17 @@ class VariableTokenize:
         return name
 
     def _tokenize_type(self) -> str:
-        type_name = ""
-        while self.char and self.char.isalnum():
-            type_name += self.char
+        types = ""
+        self.skip_whitespace()
+        while (self.char and self.char.isalnum()) or self.char == "+":
+            types += self.char
             self.advance()
-        if not type_name:
+            self.skip_whitespace()
+
+        if not types:
             raise SyntaxError("Expected variable type")
-        return type_name
 
-    def _tokenize_value(self, variable_type: str) -> Union[str, int, float, bool, None]:
-        """Токенизирует значение переменной в зависимости от типа."""
-        if variable_type == "integer":
-            return self._tokenize_integer()
-        elif variable_type == "float":
-            return self._tokenize_float()
-        elif variable_type == "string":
-            return self._tokenize_string()
-        elif variable_type == "empty":
-            return None  # Или какое значение соответствует empty
-        elif variable_type == "boolean":
-            return self._tokenize_boolean()
-        else:
-            raise ValueError(f"Unsupported variable type: {variable_type}")
-
-    def _tokenize_integer(self) -> int:
-        num_str = ""
-        while self.char and self.char.isdigit():
-            num_str += self.char
-            self.advance()
-        if not num_str:
-            raise SyntaxError("Expected integer value")
-        return int(num_str)
-
-    def _tokenize_float(self) -> float:
-        float_str = ""
-        has_dot = False
-        while self.char and (self.char.isdigit() or self.char == "."):
-            if self.char == ".":
-                if has_dot:
-                    raise SyntaxError("Invalid float number")
-                has_dot = True
-            float_str += self.char
-            self.advance()
-        if not float_str:
-            raise SyntaxError("Expected float value")
-        return float(float_str)
-
-    def _tokenize_string(self) -> str:
-        if self.char != '"':
-            raise SyntaxError("Expected string value to start with double quote")
-        self.advance()
-        string_value = ""
-        while self.char and self.char != '"':
-            string_value += self.char
-            self.advance()
-        if self.char != '"':
-            raise SyntaxError("Expected string value to end with double quote")
-        self.advance()
-        return string_value
-
-    def _tokenize_boolean(self) -> bool:
-        if self.code[self.pos:self.pos + 4] == "true":
-            self.pos += 4
-            self.advance()
-            return True
-        elif self.code[self.pos:self.pos + 5] == "false":
-            self.pos += 5
-            self.advance()
-            return False
-        else:
-            raise SyntaxError("Expected boolean value ('true' or 'false')")
+        return types.split("++")
 
 
 if __name__ == '__main__':

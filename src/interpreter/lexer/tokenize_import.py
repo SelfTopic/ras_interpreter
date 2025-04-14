@@ -1,15 +1,14 @@
 from dataclasses import dataclass
 from typing import List
+from ._tokenizer import _Tokenizer
 
 @dataclass
 class ImportStatement:
     filenames: List[str]
 
-class ImportTokenize:
+class ImportTokenize(_Tokenizer):
     def __init__(self, code: str):
-        self.code = code
-        self.pos = 0
-        self.char = self.code[self.pos] if code else ''
+        super().__init__(code)
 
     def tokenize(self) -> ImportStatement:
         """Токенизирует оператор импорта."""

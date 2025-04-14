@@ -1,15 +1,14 @@
 from dataclasses import dataclass
+from ._tokenizer import _Tokenizer
 
 @dataclass
 class WhileLoop:
     condition: str
     body: str
 
-class WhileLoopTokenize:
+class WhileLoopTokenize(_Tokenizer):
     def __init__(self, code: str):
-        self.code = code
-        self.pos = 0
-        self.char = self.code[self.pos] if code else ''
+        super().__init__(code)
 
     def tokenize(self) -> WhileLoop:
         """Токенизирует цикл while."""

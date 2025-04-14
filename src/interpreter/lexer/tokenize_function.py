@@ -1,29 +1,35 @@
-from .type_tokens import Function, Param
+# _tokenize_params() и _tokenize_param() чекни
 
-class FunctionTokenize:
+from .type_tokens import Function, Param, ParamDefaultValue, NoParamDefaultValue
+from ._tokenizer import _Tokenizer
+from .tokenize_value import ValueTokenize
 
-    def __init__(
-        self,
-        code: str
-    ):
-        self.code = code
-        self.pos = 0
-        self.char = self.code[self.pos] if code else '' 
+class FunctionTokenize(_Tokenizer):
+    def __init__(self, code: str):
+        super().__init__(code)
 
     def tokenize(self):
-
+        print(f"THIS CODE: '''{self.code}'''")
         function_name = self._tokenize_name()
         print(f"tokenize name", function_name)
-        return_type = self._tokenize_return_type()
-        print(f"tokenize return type", return_type)
+        if function_name != "initialize":
+            return_types = self._tokenize_return_types()
+        else:
+            return_types = "self"
+        print(f"tokenize return types", return_types)
         params = self._tokenize_params()
+        self.skip_whitespace()
+        if not self.code[self.pos : self.pos + 2] == "::":
+            raise SyntaxError("Expected '::' after params")
+        self.pos += 2
+        self.char = self.code[self.pos]
         body = self._tokenize_body()
 
         return Function(
             name=function_name,
             params=params,
             body=body,
-            return_type=return_type
+            return_types=[return_type.strip() for return_type in return_types.split("++")]
         ), self.pos
 
     def advance(self) -> None:
@@ -35,26 +41,26 @@ class FunctionTokenize:
 
 
     def _tokenize_body(self) -> str:
-
-        count_operators = 0
         body = ""
+        passed = 0
+        to_pass = (
+                    self.code[self.pos:].count("fn") + \
+                    self.code[self.pos:].count("cl") + \
+                    self.code[self.pos:].count("con") + \
+                    self.code[self.pos:].count("elcon") + \
+                    self.code[self.pos:].count("noc") + \
+                    self.code[self.pos:].count("whi") + \
+                    self.code[self.pos:].count("for")
+                ) * 2
 
-        while self.char != '': 
-
-            if self.char == ":":
-                self.advance()
-
-                if self.char == ":":
-                    count_operators += 1
-
-                    if count_operators == 2:
-                        self.advance() 
-                        return body
-
-                    self.advance()
-                    continue
-
-            body += self.char
+        while passed <= to_pass:
+            if self.code[self.pos : self.pos + 2] == "::":
+                passed += 1
+                if passed <= to_pass:
+                    body += "::"
+                self.pos += 1
+            else:
+                body += self.char
             self.advance()
 
         return body
@@ -65,8 +71,14 @@ class FunctionTokenize:
         function_name = ""
 
         if self.code.startswith("fn"):
-            self.pos = 2 
-            self.advance() 
+            self.pos = 2
+            self.advance()
+        elif self.code.startswith("get") or self.code.startswith("set"):
+            self.pos = 3
+            self.advance()
+        # elif self.code.startswith("initialize"):
+        #     self.pos = 10
+        #     self.advance()
 
         while self.char != " ":
 
@@ -87,9 +99,9 @@ class FunctionTokenize:
         while self.char and self.char.isspace():
             self.advance()
     
-    def _tokenize_return_type(self) -> str:
+    def _tokenize_return_types(self) -> str:
 
-        type_value = ""
+        types_value = ""
 
         self.skip_whitespace()
 
@@ -99,19 +111,19 @@ class FunctionTokenize:
         
         while self.char != ":":
             print("Tokenize return type, char: ", self.char)
-            self.pos += 1
+            # self.pos += 1
+            types_value += self.char 
             self.advance()
-            type_value += self.char 
 
         self.advance()
         
-        return type_value
+        return types_value
 
 
     def _tokenize_param(self, code: str) -> Param:
 
         name_param = ""
-        data_type = ""
+        data_types = ""
         colon_count = 0
 
         param_tokenizer = FunctionTokenize(code)
@@ -119,28 +131,40 @@ class FunctionTokenize:
         param_tokenizer.char = param_tokenizer.code[param_tokenizer.pos] if param_tokenizer.code else ''
 
         while param_tokenizer.char != '':
+            # print("122: ", param_tokenizer.char)
             if param_tokenizer.char == ':':
                 colon_count += 1
                 param_tokenizer.advance()
                 if colon_count == 1:
                     continue
                 else:
-                    break 
+                    break
 
             if colon_count == 0:
                  name_param += param_tokenizer.char
             elif colon_count == 1:
-                data_type += param_tokenizer.char
+                data_types += param_tokenizer.char
 
             param_tokenizer.advance()
 
         if colon_count != 2:
             raise Exception(f"Ошибка токенизации параметра: Ожидается 'name:type:', получено {code}")
-
+        
+        types = [data_type.strip() for data_type in data_types.split("++")]
+        
+        param_tokenizer.advance()
+        param_tokenizer.skip_whitespace()
+        
+        if code[param_tokenizer.pos:param_tokenizer.pos + 2] == "<<":
+            value, offset = ValueTokenize(code[param_tokenizer.pos+2:], types).tokenize()
+            value = ParamDefaultValue(value)
+        else:
+            value = NoParamDefaultValue()
 
         param = Param(
             name=name_param.strip(),
-            type=data_type.strip()
+            types=types,
+            value=value
         )
 
         return param
@@ -152,7 +176,13 @@ class FunctionTokenize:
         params: list[Param] = []
         param_string = ""
 
+        self.skip_whitespace()
+        if not self.char == "<":
+            Exception(f"Ошибка токенизации параметра: Ожидается '<', получено {self.char}")
+        self.advance()
         start_params_index = self.pos
+        
+        # print("157:  ", self.pos, f"'{self.char}'")
 
         while self.char != '':
             if self.code[self.pos : self.pos + 2] == "::":
@@ -168,6 +198,7 @@ class FunctionTokenize:
         params_list = param_string.split("++")
 
         for param_code in params_list:
+            print("pc:", param_code)
             if param_code.strip():
                 params.append(self._tokenize_param(param_code))
 
